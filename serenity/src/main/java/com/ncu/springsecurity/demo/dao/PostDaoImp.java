@@ -25,9 +25,9 @@ public class PostDaoImp implements PostsDao{
 			byte[] photoBytes = post.getImage1().getBytes();
 			byte[] videoBytes = post.getVideo1().getBytes();
 			
-			String sql = "INSERT INTO posts(email,title ,body,image,video) VALUES (?,?,?,?,?)";
+			String sql = "INSERT INTO posts(email,title ,body,image,video,points) VALUES (?,?,?,?,?,?)";
 			 jdbcTemplate.update(sql, new Object[]
-				        {  post.getEmail(), post.getTitle(),post.getBody(),photoBytes,videoBytes}
+				        {  post.getEmail(), post.getTitle(),post.getBody(),photoBytes,videoBytes,post.getPoints()}
 				        );
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -37,8 +37,11 @@ public class PostDaoImp implements PostsDao{
 	}
 
 	@Override
-	public void delete(String email) {
+	public void delete(int id) {
 		// TODO Auto-generated method stub
+		String sql = "DELETE FROM posts WHERE id='" + id + "'";
+		jdbcTemplate.update(sql);
+		System.out.println(id+" post deleted");
 		
 	}
 
@@ -65,7 +68,25 @@ public class PostDaoImp implements PostsDao{
 	@Override
 	public void Update(PostsModel post) {
 		// TODO Auto-generated method stub
+		try {
+			if(post.getImage1()==null && post.getVideo1() == null) {
+				String sql = "UPDATE posts SET email=?,title=?,body=? WHERE id = ?";
+				 jdbcTemplate.update(sql, new Object[]
+					        {  post.getEmail(), post.getTitle(),post.getBody(), post.getId()}
+					        );
+			}else {
+			byte[] photoBytes = post.getImage1().getBytes();
+			byte[] videoBytes = post.getVideo1().getBytes();
+		String sql = "UPDATE posts SET email=?,title=?,body=?,image=?,video=? WHERE id = ?";
 		
+		 jdbcTemplate.update(sql, new Object[]
+			        {  post.getEmail(), post.getTitle(),post.getBody(),photoBytes,videoBytes, post.getId()}
+			        );
+			}
+	} catch (IOException e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
+	}
 	}
 
 	@Override
@@ -76,6 +97,12 @@ public class PostDaoImp implements PostsDao{
 		
 		return list;
 
+	}
+
+	@Override
+	public void delete(String email) {
+		// TODO Auto-generated method stub
+		
 	}
 
 }

@@ -82,8 +82,21 @@ public class StudentDaoImp implements StudentDao {
 	}
 
 	@Override
-	public void Update(StudentModel user) {
+	public void Update(StudentModel user){
 		// TODO Auto-generated method stub
+		System.out.println("inside update profile ++++++++++++++++++++");
+		byte[] photoBytes;
+		try {
+			photoBytes = user.getImage().getBytes();
+			String sql = "UPDATE students SET userName=?,course=?,specialisation=?,image=? ,gender = ? WHERE email = ?";
+			 jdbcTemplate.update(sql, new Object[]
+				        {  user.getUserName(),user.getCourse(),user.getSpecialisation(),photoBytes,user.getGender() , user.getEmail()}
+				        );
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
 		
 	}
 

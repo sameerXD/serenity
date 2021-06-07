@@ -3,16 +3,21 @@ package com.ncu.springsecurity.demo.controller;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+
 import java.sql.Blob;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
+
 import java.util.List;
+import java.util.TreeMap;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.sql.rowset.serial.SerialBlob;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.log4j.Logger;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -23,15 +28,18 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestAttribute;
+
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.ModelAndView;
 
+import com.ncu.springsecurity.demo.Model.LikeModel;
 import com.ncu.springsecurity.demo.Model.PostsModel;
 import com.ncu.springsecurity.demo.Model.StudentModel;
 import com.ncu.springsecurity.demo.Model.StudentModel1;
+import com.ncu.springsecurity.demo.dao.LikeDao;
 import com.ncu.springsecurity.demo.dao.PostDaoImp;
 import com.ncu.springsecurity.demo.dao.PostsDao;
 import com.ncu.springsecurity.demo.dao.StudentDaoImp;
@@ -44,18 +52,23 @@ public class DemoController {
 	Collection<? extends GrantedAuthority> currentUserRole = null;
     List<GrantedAuthority> authorities
       = new ArrayList<>();
-    
+    private static final Logger LOGGER = Logger.getLogger(DemoController.class);
     
 	@Autowired
 	private StudentDaoImp studentDao;
 	
 	@Autowired
 	private PostDaoImp postDao;
+	
+    
+	@Autowired
+	private LikeDao likeDao;
 
 	@RequestMapping(value = "/" )
 	public String showHome(Model m, @ModelAttribute("stud") StudentModel stud, @ModelAttribute("posts") PostsModel posts) throws SQLException {
 		StudentModel1 student  = new StudentModel1();
- 
+        int likeCount; 
+        TreeMap<Integer, Integer> map = new TreeMap<>();
 		//set username and authentication from spring security
 		userDetails();
 
@@ -88,8 +101,22 @@ public class DemoController {
 		List<PostsModel> posts1 = postDao.list();
 		m.addAttribute("posts1", posts1);
 		
+		//likes
+		List<LikeModel> likeList = likeDao.list();
+		m.addAttribute("likeList", likeList);
+		
+		for(PostsModel x: posts1) {
+			likeCount = likeDao.count(x.getId());
+			map.put(x.getId(), likeCount);
+		}
+		
+		LOGGER.info(" likes "+map);
+		m.addAttribute("likeCount", map);
 		return "home";
 	}
+	
+	
+	
 	
 	// add request mapping for /leaders
 
@@ -142,7 +169,7 @@ public class DemoController {
 		IOUtils.copy(inputStream, response.getOutputStream());
 	}
 	
-	@RequestMapping(value = "/yourPosts/getPostclip/id/{id}/type/{type}")
+	@RequestMapping(value = "/getPostclip/id/{id}/type/{type}")
 	public void getPostClip(HttpServletResponse response, @PathVariable(value = "id") int id, @PathVariable(value = "type") String type) throws SQLException, IOException {
 		response.setContentType("image/jpeg/video/mp4"); 
 		Blob ph = null ;
@@ -165,21 +192,102 @@ public class DemoController {
 	
 	
 	@RequestMapping(value = "/post" ,method = RequestMethod.POST)
-	public String post( @ModelAttribute("posts") PostsModel posts,@RequestParam("image1") MultipartFile image,@RequestParam("video1") MultipartFile video) {
+	public ModelAndView post( @ModelAttribute("posts") PostsModel posts,@RequestParam("image1") MultipartFile image,@RequestParam("video1") MultipartFile video) {
         posts.setImage1(image);
         posts.setVideo1(video);
+        posts.setPoints(0);
         postDao.saveOrUpdate(posts);
 		System.out.println(posts);
-		return "xyz";
+		return new ModelAndView("redirect:/");
 	}
 	
-	@RequestMapping(value = "yourPosts/{email}")
-	public String yourPosts(@PathVariable("email") String email , Model m) {
-		System.out.println("showing all pasts of " + email+".com");
-		List<PostsModel> posts = postDao.userlist(email+".com");
+	@RequestMapping(value = "yourPosts")
+	public String yourPosts( Model m) {
+		 TreeMap<Integer, Integer> map = new TreeMap<>();
+		 int likeCount;
+		userDetails();
+		System.out.println("showing all pasts of " + userName);
+		List<PostsModel> posts = postDao.userlist(userName);
 		m.addAttribute("posts", posts);
+		//likes
+				List<LikeModel> likeList = likeDao.list();
+				m.addAttribute("likeList", likeList);
+				
+				for(PostsModel x: posts) {
+					likeCount = likeDao.count(x.getId());
+					map.put(x.getId(), likeCount);
+				}
+				
+				LOGGER.info("your likes "+map);
+				m.addAttribute("likeCount", map);
 		return "posts";
 	}
+	
+	@RequestMapping(value = "yourPosts/delete/{id}")
+	public ModelAndView deletePost(@PathVariable("id") String id) {
+		Integer i = Integer.parseInt(id);
+		LOGGER.info("id to be deleted ====" + i);
+		System.out.println("id to be deleted ====" + i);
+		try {
+			postDao.delete(i);
+			LOGGER.info(i + " profile deleted");
+		} catch (Exception e) {
+			// TODO: handle exception
+			LOGGER.warn(i +" WAS NOT DELETED BEC   ..." + e);
+		}
+		
+		return new ModelAndView("redirect:/yourPosts");
+	}
+	
+	@RequestMapping(value = "yourPosts/update/{id}")
+	public String updatePost(@PathVariable("id") String id ,  @ModelAttribute("posts") PostsModel posts, Model m) {
+		
+		Integer i = Integer.parseInt(id);
+		LOGGER.info(i + " to be updated");
+		PostsModel post = postDao.get(i);
+		m.addAttribute("post",post);
+		return "updatePost";
+	}
+	
+	@RequestMapping(value = "yourPosts/update/updatePost" , method =RequestMethod.POST)
+	public ModelAndView updatedPost( @ModelAttribute("posts") PostsModel posts, Model m,@RequestParam(name = "image1", required = false) MultipartFile image,@RequestParam(name ="video1" , required = false) MultipartFile video,@RequestParam("id") String id) {
+        LOGGER.info("image  " + image + "video " + video);
+		Integer i = Integer.parseInt(id);
+		posts.setId(i);
+		System.out.println(posts);
+		LOGGER.info(posts + " to be updated");
+		postDao.Update(posts);
+		return new ModelAndView("redirect:/yourPosts ");
+	}
+	
+	@RequestMapping(value = "/profile")
+	public String updateProfile(@ModelAttribute("stud") StudentModel stud,Model m) {
+		userDetails();
+		StudentModel1 student  = new StudentModel1();
+		 student = studentDao.get(userName);
+		    System.out.println("jdbc student  " + student+ "user " + userName);
+
+		    m.addAttribute("student", student);
+		return "updateProfile";
+	}
+	
+	@RequestMapping(value = "/updateProfile")
+	public ModelAndView updatedProfile(@ModelAttribute("stud") StudentModel stud, @RequestParam("file") MultipartFile file, Model m) throws IOException {
+		String duplicate = null;
+		userDetails();
+		stud.setEmail(userName);
+		LOGGER.info("profile to be updated ----- " + stud + "  image " + file);
+		stud.setImage(file);
+		try {
+			studentDao.Update(stud);
+		} catch (Exception e) {
+			// TODO: handle exception
+			return new ModelAndView("redirect:/profile");
+		}
+		
+		return new ModelAndView("redirect:/");
+	}
+	
 	
 	//function
 	private void userDetails() {

@@ -19,4 +19,6 @@ public interface PostsDao {
 
 	PostsModel get(int id);
 
+	void delete(int id);
+
 }

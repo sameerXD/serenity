@@ -11,27 +11,37 @@
 <html>
 
 <head>
+<style type="text/css">
+.like1 {
+  display: none;
+}
+</style>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script>
+$(document).ready(function(){
+  $(".like").hover(function(){
+    $(".like1").css("display", "block");
+    
+    }, function(){
+    $(".like1").css("display", "none");
+  });
+});
+</script>
 	<title>luv2code Company Home Page</title>
 </head>
 
 <body>
-	<h2>luv2code Company Home Page </h2>
+	<h1>luv2code Company Home Page </h1>
+	<br>
+	<a href = "${pageContext.request.contextPath}/profile">update Profile</a>
+		<!-- users posts -->
+	<a href = "${pageContext.request.contextPath}/yourPosts/">your posts</a>
 	<hr>
-	<c:if test="getStudentPhoto/<c:out value='${student.email}'/>"></c:if>
+	<br>
 	<img width="100" height="100" src="getStudentPhoto/<c:out value='${student.email}'/>">
-	<video width="320" height="240" controls>
-  <source src="getStudentPhoto/<c:out value='${student.email}'/>" type="video/mp4">
-  <source src="getStudentPhoto/<c:out value='${student.email}'/>" type="video/ogg">
-Your browser does not support the video tag.
-</video>
+
 	<c:out value="${ student}"></c:out>
-	
-	
-	<!-- users posts -->
-	<a href = "${pageContext.request.contextPath}/yourPosts/<c:out value='${student.email}'/>">your posts</a>
-	
-	
-	
+
 	<p>
 	Welcome to the luv2code company home page!
 	</p>
@@ -58,6 +68,9 @@ Your browser does not support the video tag.
 	</p>
 	
 	<!-- all users posts -->
+	
+
+	
 	<h1>these are all the posts</h1>
 	<c:forEach items="${posts1}" var="post">
 	<h4 class="card-title"><c:out value="${post.email}"></c:out></h4>
@@ -65,14 +78,30 @@ Your browser does not support the video tag.
 <h4 class="card-title"><c:out value="${post.body}"></c:out></h4>
 <h4 class="card-title"><c:out value="${post.time}"></c:out></h4>
 
-  	<img width="100" height="100" src="yourPosts/getPostclip/id/${post.id}/type/{image}">
+  	<img width="100" height="100" src="${pageContext.request.contextPath}/getPostclip/id/${post.id}/type/{image}">
   	
   		<video width="320" height="240" controls>
-  <source src="yourPosts/getPostclip/id/${post.id}/type/{video}" type="video/mp4">
-  <source src="yourPosts/getPostclip/id/${post.id}/type/{video}" type="video/ogg">
+  <source src="${pageContext.request.contextPath}/getPostclip/id/${post.id}/type/{video}" type="video/mp4">
+  <source src="${pageContext.request.contextPath}/getPostclip/id/${post.id}/type/{video}" type="video/ogg">
 Your browser does not support the video tag.
 </video>
+<br>
+	<br>
+<button class = "like">liked by:-</button>	
+<a  href= "${pageContext.request.contextPath}/like/${post.id}">Like</a>
+<c:out value="${likeCount.get(post.id) }"></c:out>
+<br>
+	<br>
+<div class = "like1">
+<h2>liked by---------></h2>
+<c:forEach items="${likeList }" var = "like">
+<c:if test="${(like.post_id) == post.id }">
 
+<h3 >${like.email}</h3>
+
+</c:if>
+</c:forEach>
+</div>
 </c:forEach>
 	
 	<security:authorize access="hasRole('Teacher')">
@@ -98,7 +127,7 @@ Your browser does not support the video tag.
 	
 	</security:authorize>
 	
-	<hr>
+
 	
 
 	<!-- Add a logout button -->

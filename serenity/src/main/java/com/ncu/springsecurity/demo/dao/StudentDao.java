@@ -16,6 +16,6 @@ public void saveOrUpdate(StudentModel user) throws IOException;
      
     public List<StudentModel> list();
 
-	void Update(StudentModel user);
+	void Update(StudentModel user) throws IOException;
 
 }
