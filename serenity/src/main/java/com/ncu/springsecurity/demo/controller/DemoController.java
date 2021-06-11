@@ -8,7 +8,7 @@ import java.sql.Blob;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
-
+import java.util.HashMap;
 import java.util.List;
 import java.util.TreeMap;
 
@@ -35,13 +35,19 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.ModelAndView;
 
+import com.ncu.springsecurity.demo.Model.CommentModel;
 import com.ncu.springsecurity.demo.Model.LikeModel;
 import com.ncu.springsecurity.demo.Model.PostsModel;
+import com.ncu.springsecurity.demo.Model.RegisterModel;
 import com.ncu.springsecurity.demo.Model.StudentModel;
 import com.ncu.springsecurity.demo.Model.StudentModel1;
+import com.ncu.springsecurity.demo.Model.ToBeTeacher;
+import com.ncu.springsecurity.demo.dao.CommentDao;
 import com.ncu.springsecurity.demo.dao.LikeDao;
 import com.ncu.springsecurity.demo.dao.PostDaoImp;
 import com.ncu.springsecurity.demo.dao.PostsDao;
+import com.ncu.springsecurity.demo.dao.RegisterDao;
+import com.ncu.springsecurity.demo.dao.RegisterDaoImp;
 import com.ncu.springsecurity.demo.dao.StudentDaoImp;
 
 @Controller
@@ -63,12 +69,19 @@ public class DemoController {
     
 	@Autowired
 	private LikeDao likeDao;
+	
+	@Autowired
+	private CommentDao commentDao;
+	
+	@Autowired
+	private RegisterDaoImp registerDao; 
 
 	@RequestMapping(value = "/" )
 	public String showHome(Model m, @ModelAttribute("stud") StudentModel stud, @ModelAttribute("posts") PostsModel posts) throws SQLException {
 		StudentModel1 student  = new StudentModel1();
         int likeCount; 
         TreeMap<Integer, Integer> map = new TreeMap<>();
+        HashMap<Integer,Integer> commentCount = new HashMap<Integer,Integer>();
 		//set username and authentication from spring security
 		userDetails();
 
@@ -78,15 +91,23 @@ public class DemoController {
 	    for(int i =0 ; i<authorities.size();i++) {
 	    	if(i==0) {
 	    		role1 = authorities.get(i).toString();
+	    		 LOGGER.info("----role1 " + role1);
 	    	}
 	    	if(i==1) {
 	    		role2  =  authorities.get(i).toString();
+	    		 LOGGER.info("----role2 " + role2);
 	    	}
 	    	
 		    if(role1.equals("ROLE_Student") && role2.equals("ROLE_Teacher")) {
                 System.out.println("----walla you are in teacher ");
  	
 		    }
+		    if(role1.equals("ROLE_ADMIN")) {
+                LOGGER.info("----walla you are a admin login");
+                List<ToBeTeacher> list=registerDao.toBeTeacherList();
+                m.addAttribute("toBeTeacherList", list);
+		    }
+		   
 		    
 		    student = studentDao.get(userName);
 		    System.out.println("jdbc student  " + student+ "user " + userName);
@@ -112,6 +133,10 @@ public class DemoController {
 		
 		LOGGER.info(" likes "+map);
 		m.addAttribute("likeCount", map);
+		
+		//comments
+		List<CommentModel> comments = commentDao.list();
+		m.addAttribute("commentList", comments);
 		return "home";
 	}
 	
@@ -121,7 +146,8 @@ public class DemoController {
 	// add request mapping for /leaders
 
 	@GetMapping("/teachers")
-	public String showLeaders() {
+	public String showLeaders(Model m) {
+	    
 		
 		return "leaders";
 	}
@@ -129,13 +155,75 @@ public class DemoController {
 	// add request mapping for /systems
 	
 	@GetMapping("/systems")
-	public String showSystems() {
-		
+	public String showSystems(Model m) {
+		for(int i =0 ; i<authorities.size();i++) {
+	    	if(i==0) {
+	    		role1 = authorities.get(i).toString();
+	    		 LOGGER.info("----role1 " + role1);
+	    	}
+	    	if(i==1) {
+	    		role2  =  authorities.get(i).toString();
+	    		 LOGGER.info("----role2 " + role2);
+	    	}
+	    	if(role1.equals("ROLE_ADMIN")) {
+                LOGGER.info("----walla you are a admin login");
+                List<ToBeTeacher> list=registerDao.toBeTeacherList();
+                m.addAttribute("toBeTeacherList", list);
+		    }
+	    }
 		return "systems";
 	}
 	
+	//Admin all members list
+	@GetMapping("/systems/allMembers")
+	public String allMembers(Model m) {
+		List<StudentModel> list = registerDao.listOfAllUsers();
+		LOGGER.info("all users " + list);
+		m.addAttribute("allUserNames",list);
+		return "AllUsers";
+	}
+	
+	//delete user
+	@GetMapping("/systems/deleteUser/{user:.+}")
+	public ModelAndView allMembers(@PathVariable("user") String user) {
+        LOGGER.info(user + " to be deleted");
+        registerDao.deleteUser(user);
+		return new ModelAndView("redirect:/systems/allMembers");
+	}
+	
+	@RequestMapping(value = "/admin/{id}")
+	public void getIdCard(HttpServletResponse response, @PathVariable("id") int id) throws Exception {
+		
+		response.setContentType("image/jpeg/video/mp4");
+		System.out.println("idCard id-----------" + id);
+		ToBeTeacher teacher = new ToBeTeacher();
+		teacher = registerDao.getToBeTeacher(id);
+        System.out.println(teacher);
+		Blob ph = teacher.getIdCard();
+
+		byte[] bytes = ph.getBytes(1, (int) ph.length());
+		System.out.println("bytes--------------------------------"+bytes);
+		
+		InputStream inputStream = new ByteArrayInputStream(bytes);
+		IOUtils.copy(inputStream, response.getOutputStream());
+	}
+	
+	@RequestMapping(value = "/teacherORNot/id/{id}/user/{user}/permission/{permission}")
+	public ModelAndView permissionToBeTeacher(@PathVariable("id") int id,@PathVariable("permission") String permission ,@PathVariable("user") String user) {
+		System.out.println(id + permission);
+		if(permission.equals("{approve}")) {
+			registerDao.approveToBeTeacher(user);
+			registerDao.deleteToBeTeacher(id);
+			LOGGER.info(id + " teacher to be approved");
+		}else if(permission.equals("{deny}")) {
+			registerDao.deleteToBeTeacher(id);
+			LOGGER.info(id + " teacher to be denied");
+		}
+		return new ModelAndView("redirect:/systems");
+	}
+	
 	@RequestMapping(value = "/buildProfile" ,method = RequestMethod.POST)
-	public String buildProfile(Model m,@ModelAttribute("stud") StudentModel stud,@RequestParam("file") MultipartFile file) throws IOException {
+	public ModelAndView buildProfile(Model m,@ModelAttribute("stud") StudentModel stud,@RequestParam("file") MultipartFile file) throws IOException {
 		stud.setImage(file);
 		StudentModel1 user  = new StudentModel1();
 		try {
@@ -143,22 +231,22 @@ public class DemoController {
 		} catch (Exception e) {
 			// TODO: handle exception
 			System.out.println(e);
-			return "buildProfile";
+			return new ModelAndView("redirect:/buildProfile");
 		}
 		
 		System.out.println("JDBC STUDENT "+studentDao.get(stud.getUserName()));
 		
 		user = studentDao.get(userName);
 		m.addAttribute("student", user);
-		return "home";
+		return new ModelAndView("redirect:/");
 	}
 	
-	@RequestMapping(value = "/getStudentPhoto/{email}")
+	@RequestMapping(value = "/getStudentPhoto/{email:.+}")
 	public void getStudentPhoto(HttpServletResponse response, @PathVariable("email") String email) throws Exception {
 		response.setContentType("image/jpeg/video/mp4");
 		System.out.println("lob-----------" + email);
 		StudentModel1 student  = new StudentModel1();
-		 student = studentDao.get(email+".com");
+		 student = studentDao.get(email);
         System.out.println(student);
 		Blob ph = student.getImage();
 
@@ -207,7 +295,7 @@ public class DemoController {
 		 int likeCount;
 		userDetails();
 		System.out.println("showing all pasts of " + userName);
-		List<PostsModel> posts = postDao.userlist(userName);
+		List<PostsModel> posts = postDao.userPostlist(userName);
 		m.addAttribute("posts", posts);
 		//likes
 				List<LikeModel> likeList = likeDao.list();

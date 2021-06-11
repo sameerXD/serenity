@@ -35,7 +35,7 @@ public class DemoSecurityConfig extends WebSecurityConfigurerAdapter {
 		  http.csrf().disable()
 
 		.authorizeRequests()
-			.antMatchers("/**").hasRole("Student")
+			.antMatchers("/").hasRole("Student")
 			.antMatchers("/teachers/**").hasRole("Teacher")
 			.antMatchers("/systems/**").hasRole("ADMIN")
 			.and()

@@ -15,10 +15,12 @@ public interface PostsDao {
 
 	void Update(PostsModel post);
 
-	List<PostsModel> userlist(String email);
+	List<PostsModel> userPostlist(String email);
 
 	PostsModel get(int id);
 
 	void delete(int id);
+
+	
 
 }

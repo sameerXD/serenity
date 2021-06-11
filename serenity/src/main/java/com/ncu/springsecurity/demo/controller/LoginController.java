@@ -1,5 +1,6 @@
 package com.ncu.springsecurity.demo.controller;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.Random;
 
@@ -71,11 +72,16 @@ public class LoginController {
 
 	
 	@RequestMapping(value = "/signUp" ,method = RequestMethod.POST)
-	public String signUp(Model m ,@ModelAttribute("user") RegisterModel user) {
+	public String signUp(Model m ,@ModelAttribute("user") RegisterModel user) throws IOException {
 		
 	System.out.println(user);
+    try {
+	registerDao.saveOrUpdate(user);
+    } catch (Exception e) {
+	// TODO: handle exception
+    	return "emailAuth";
+    }
 
-		registerDao.saveOrUpdate(user);
 	     
 		 return "fancy-login";
 	}

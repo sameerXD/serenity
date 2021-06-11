@@ -56,7 +56,7 @@ public class PostDaoImp implements PostsDao{
 
 	
 	@Override
-	public List<PostsModel> userlist(String email) {
+	public List<PostsModel> userPostlist(String email) {
 		String sql = "select * from posts where email = '" + email +"'";
 		
 		List<PostsModel> list = jdbcTemplate.query(sql, new BeanPropertyRowMapper<PostsModel>(PostsModel.class)); 

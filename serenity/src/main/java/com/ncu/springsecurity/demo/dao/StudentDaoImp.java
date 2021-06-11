@@ -17,23 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.ncu.springsecurity.demo.Model.StudentModel;
 import com.ncu.springsecurity.demo.Model.StudentModel1;
 
-//class UserMapper1 implements RowMapper<StudentModel>{
-//
-//	@Override
-//	public StudentModel mapRow(ResultSet rs, int rowNum) throws SQLException {
-//		// TODO Auto-generated method stub
-//		StudentModel customer = new StudentModel();
-//		//customer.setEmail(rs.getString(1));
-//		customer.setUserName(rs.getString(1));
-//		customer.setEmail(rs.getString(2));
-//		customer.setCourse(rs.getString(3));
-//		customer.setSpecialisation(rs.getString(4));
-//		customer.setPhoto(rs.getBlob(5));
-//		customer.setGender(rs.getString(6));
-//		return customer;
-//	}
-//	
-//}
 
 @Repository
 @Transactional
