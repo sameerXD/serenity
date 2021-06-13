@@ -3,6 +3,7 @@ package com.ncu.springsecurity.demo.controller;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.TreeMap;
 
@@ -22,10 +23,15 @@ import org.springframework.web.servlet.ModelAndView;
 import com.ncu.springsecurity.demo.Model.CommentModel;
 import com.ncu.springsecurity.demo.Model.LikeModel;
 import com.ncu.springsecurity.demo.Model.PostsModel;
+import com.ncu.springsecurity.demo.Model.ReportCountModel;
+import com.ncu.springsecurity.demo.Model.ReportModel;
 import com.ncu.springsecurity.demo.Model.StudentModel1;
+import com.ncu.springsecurity.demo.Model.TotalMarks;
 import com.ncu.springsecurity.demo.dao.CommentDao;
 import com.ncu.springsecurity.demo.dao.LikeDao;
 import com.ncu.springsecurity.demo.dao.PostDaoImp;
+import com.ncu.springsecurity.demo.dao.RegisterDao;
+import com.ncu.springsecurity.demo.dao.ReportDaoImp;
 import com.ncu.springsecurity.demo.dao.StudentDaoImp;
 
 @Controller
@@ -48,6 +54,9 @@ public class universalController {
 	private StudentDaoImp studentDao;
 	
 	@Autowired PostDaoImp postDao;
+	
+	@Autowired
+	private ReportDaoImp reportDao;
 	
 	@RequestMapping(value = "/like/{id}")
 	private ModelAndView like(@PathVariable("id") String id) {
@@ -124,8 +133,65 @@ public class universalController {
 	private ModelAndView reportPost(@PathVariable("id") int id) {
 		userDetails();
 		LOGGER.info(userName+" is reporting post " + id);
-		return new ModelAndView("redirect:/");
+		ReportModel report = new ReportModel();
+		report.setPost_id(id);
+		report.setEmail(userName);
+		try {
+			reportDao.saveOrUpdate(report);
+			return new ModelAndView("redirect:/");
+		} catch (Exception e) {
+			// TODO: handle exception
+			System.out.println(userName+" has already reported post " + id);
+			return new ModelAndView("redirect:/");
+		}
+		
+	
 	}
+	
+	@RequestMapping(value = "/teachers/ReportedContent")
+	private String ReportedContent(Model m) {
+		List<PostsModel> posts = new LinkedList<PostsModel>();
+		List<ReportCountModel> list = reportDao.countAll();
+		LOGGER.info("list of reported post" + list);
+		
+		for(ReportCountModel report:list) {
+			
+			posts.add(postDao.get(report.getPost_id()));
+		}
+		m.addAttribute("reportedAll", list);
+		m.addAttribute("reportedPost", posts);
+		return "reportedContent";
+	}
+	
+	//delete inappropriate posts 
+	@RequestMapping(value = "/teachers/deletePost/{id}") 
+	private ModelAndView DeleteReportedPost(@PathVariable("id") int id) {
+		postDao.delete(id);
+		return new ModelAndView("redirect:/teachers/ReportedContent");
+	}
+	
+	
+	//mark the students
+	@RequestMapping(value = "/teachers/mark")
+	private ModelAndView mark (@RequestParam(required = false, name = "marks") int marks,@RequestParam(required = false, name = "postId") int postId) {
+		userDetails();
+		LOGGER.info(userName + " is updating post Marks  " + postId +" to  " +marks );
+		PostsModel post = new PostsModel();
+		post.setId(postId);
+		post.setPoints(marks);
+		postDao.Mark(post);
+		return new ModelAndView("redirect:/teachers");
+	}
+	
+	//Top Scorers
+	@RequestMapping(value = "/topScorers")
+	private String topScorers(Model m) {
+		List<TotalMarks> list = new ArrayList<>();
+		list = postDao.highestScorers();
+		m.addAttribute("topScorers", list);
+		return "topScorers";
+	}
+	
 	
 	//function
 	private void userDetails() {

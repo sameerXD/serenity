@@ -60,6 +60,8 @@ $(document).ready(function(){
 	<a href = "${pageContext.request.contextPath}/profile">update Profile</a>
 		<!-- users posts -->
 	<a href = "${pageContext.request.contextPath}/yourPosts/">your posts</a>
+	<!-- Top Scorers -->
+	<a href = "${pageContext.request.contextPath}/topScorers/">Top Scorers</a>
 	<hr>
 	<br>
 	<img width="100" height="100" src="getStudentPhoto/<c:out value='${student.email}'/>">
@@ -152,6 +154,8 @@ Your browser does not support the video tag.
 </div>
 </div>
 </div>
+<br>
+<br>
 </c:forEach>
 	
 	<security:authorize access="hasRole('Teacher')">
@@ -159,7 +163,7 @@ Your browser does not support the video tag.
 		<!-- Add a link to point to /leaders ... this is for the managers -->
 		
 		<p>
-			<a href="${pageContext.request.contextPath}/teachers">Leadership Meeting</a>
+			<a href="${pageContext.request.contextPath}/teachers">Teacher Control Pannel</a>
 			(Only for Manager peeps)
 		</p>
 

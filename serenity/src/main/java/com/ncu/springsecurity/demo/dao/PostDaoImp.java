@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.ncu.springsecurity.demo.Model.PostsModel;
 import com.ncu.springsecurity.demo.Model.StudentModel1;
+import com.ncu.springsecurity.demo.Model.TotalMarks;
 
 @Repository
 @Transactional
@@ -25,9 +26,9 @@ public class PostDaoImp implements PostsDao{
 			byte[] photoBytes = post.getImage1().getBytes();
 			byte[] videoBytes = post.getVideo1().getBytes();
 			
-			String sql = "INSERT INTO posts(email,title ,body,image,video,points) VALUES (?,?,?,?,?,?)";
+			String sql = "INSERT INTO posts(email,title ,body,image,video) VALUES (?,?,?,?,?)";
 			 jdbcTemplate.update(sql, new Object[]
-				        {  post.getEmail(), post.getTitle(),post.getBody(),photoBytes,videoBytes,post.getPoints()}
+				        {  post.getEmail(), post.getTitle(),post.getBody(),photoBytes,videoBytes}
 				        );
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -88,12 +89,31 @@ public class PostDaoImp implements PostsDao{
 		e.printStackTrace();
 	}
 	}
+	
+	@Override
+	public void Mark(PostsModel post) {
+		// TODO Auto-generated method stub
+		String sql = "UPDATE posts SET points = ? WHERE id = ?";
+		 jdbcTemplate.update(sql, new Object[]
+			        {  post.getPoints(),post.getId()}
+			        );
+	}
 
 	@Override
 	public List<PostsModel> list() {
 		String sql = "select * from posts";
 		
 		List<PostsModel> list = jdbcTemplate.query(sql, new BeanPropertyRowMapper<PostsModel>(PostsModel.class)); 
+		
+		return list;
+
+	}
+	
+	@Override
+	public List<TotalMarks> highestScorers() {
+		String sql = "SELECT email,SUM(points) AS marks FROM posts GROUP BY  email ORDER BY SUM(points) DESC";
+		
+		List<TotalMarks> list = jdbcTemplate.query(sql, new BeanPropertyRowMapper<TotalMarks>(TotalMarks.class)); 
 		
 		return list;
 

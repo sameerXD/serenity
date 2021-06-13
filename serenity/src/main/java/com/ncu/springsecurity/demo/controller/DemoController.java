@@ -147,9 +147,9 @@ public class DemoController {
 
 	@GetMapping("/teachers")
 	public String showLeaders(Model m) {
-	    
-		
-		return "leaders";
+	    List<PostsModel>list = postDao.list();
+		m.addAttribute("allPosts",list);
+		return "teacherControlPannel";
 	}
 	
 	// add request mapping for /systems
@@ -308,6 +308,11 @@ public class DemoController {
 				
 				LOGGER.info("your likes "+map);
 				m.addAttribute("likeCount", map);
+				
+				//comments
+				List<CommentModel> comments = commentDao.list();
+				m.addAttribute("commentList", comments);
+			
 		return "posts";
 	}
 	
